@@ -1,0 +1,9 @@
+# This file contains the list of dependencies required by your project.
+
+python>=3.8,<4
+argparse~=1.1
+re==0.0.1
+html==0.0.1
+datetime==2.7.6
+
+json-1.x
