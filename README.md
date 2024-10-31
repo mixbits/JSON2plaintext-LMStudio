@@ -44,8 +44,9 @@ This will install all required packages specified in `requirements.txt`.
 
 Finally, execute the following command to run the script:
 ```bash
-python LMStudio-JSON2plaintext.py
+python LMStudio-JSON2plaintext.py JSONexample.json
 ```
+Note: Make sure to replace 'JSONexample.json' with the JSON conversation file stored within the file directory
 
 ## Common Issues
 
