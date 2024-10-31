@@ -1,10 +1,12 @@
 # LMStudio-JSON2plaintext
 allows the conversion of LM Studio conversation files (.JSON) into plaintext or HTML for better readability
-Prerequisites
+
+Prerequisites -
 
 Python 3.8 or higher installed on your system
 pip (Python package manager) installed on your system
-Installation Steps
+
+Installation Steps -
 
 Clone the repository: Run the following command in your terminal:
 git clone https://github.com/mixbits/LMStudio-JSON2plaintext.git
