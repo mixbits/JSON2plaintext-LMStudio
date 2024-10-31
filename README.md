@@ -22,7 +22,7 @@ This will install all required packages specified in requirements.txt.
 Run the script: Execute the following command in your terminal:
 python LMStudio-JSON2plaintext.py
 
-Common Issues
+Common Issues -
 
 If you encounter any issues during installation, ensure that pip is installed on your system and try running pip install -r requirements.txt --upgrade.
 If you're using a virtual environment, make sure to activate it before installing dependencies and running the script.
