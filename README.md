@@ -1,4 +1,4 @@
-# LMStudio-JSON2plaintext
+# JSON2plaintext-LMStudio
 =====================================
 
 A Python Script for Converting LM Studio Conversation Files to Plaintext or HTML
