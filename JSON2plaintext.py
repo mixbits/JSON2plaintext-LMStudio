@@ -3,7 +3,9 @@ import argparse
 import os
 import re
 import html
-from datetime import datetime
+import logging
+from datetime import datetime, timezone
+from tqdm import tqdm
 
 def clean_content(content):
     """
@@ -33,17 +35,19 @@ def extract_content(item):
     """
     if isinstance(item, dict):
         if 'text' in item:
-            return item['text']
+            return extract_content(item['text'])
         elif 'content' in item:
             return extract_content(item['content'])
         elif 'steps' in item:
             content = ''
-            for step in item['steps']:
+            for step in item.get('steps', []):
                 if step.get('type') == 'contentBlock':
                     content += extract_content(step.get('content', []))
             return content
         elif 'messages' in item:
             return extract_content(item['messages'])
+        elif 'data' in item:
+            return extract_content(item['data'])
     elif isinstance(item, list):
         content = ''
         for elem in item:
@@ -63,7 +67,7 @@ def format_dialogue(messages, output_format, include_timestamps):
     """
     formatted_dialogue = ""
 
-    for message in messages:
+    for message in tqdm(messages, desc="Processing messages"):
         # Handle 'versions' with 'currentlySelected'
         if 'versions' in message:
             version_index = message.get('currentlySelected', 0)
@@ -73,7 +77,7 @@ def format_dialogue(messages, output_format, include_timestamps):
                 role = version.get('role', 'Unknown').capitalize()
                 content = extract_content(version)
             else:
-                print("Warning: 'currentlySelected' index out of range.")
+                logging.warning("'currentlySelected' index out of range.")
                 continue
         else:
             role = message.get('role', 'Unknown').capitalize()
@@ -84,26 +88,39 @@ def format_dialogue(messages, output_format, include_timestamps):
         if not content:
             continue
 
+        timestamp_str = ''
         if include_timestamps and 'timestamp' in message:
-            timestamp = datetime.fromtimestamp(message['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
-            formatted_message = f"{role} [{timestamp}]:\n{content}\n\n"
+            timestamp = datetime.fromtimestamp(
+                message['timestamp'], tz=timezone.utc
+            ).strftime('%Y-%m-%d %H:%M:%S %Z')
+            timestamp_str = f" [{timestamp}]"
+
+        if output_format == 'markdown':
+            formatted_message = f"### {role}{timestamp_str}\n\n{content}\n\n"
+        elif output_format == 'html':
+            formatted_message = f"""<div class="{role.lower()}">
+    <h3>{role}{timestamp_str}</h3>
+    <p>{content}</p>
+</div>\n"""
         else:
-            formatted_message = f"{role}:\n{content}\n\n"
+            formatted_message = f"{role}{timestamp_str}:\n{content}\n\n"
 
         formatted_dialogue += formatted_message
 
-    # Format according to the chosen output format
-    if output_format == 'markdown':
-        # Basic markdown formatting
-        formatted_dialogue = formatted_dialogue.replace("\n", "\n\n")
-    elif output_format == 'html':
-        # Basic HTML formatting
-        formatted_dialogue = formatted_dialogue.replace("\n", "<br>")
-
     return formatted_dialogue
 
+def setup_logging():
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(levelname)s: %(message)s'
+    )
+
 def main():
-    parser = argparse.ArgumentParser(description='Convert JSON conversation to readable text.')
+    setup_logging()
+    parser = argparse.ArgumentParser(
+        description='Convert JSON conversation to readable text.',
+        epilog='Example: python script.py input.json -o markdown -t -f output.md'
+    )
     parser.add_argument('input_file', help='Input JSON file containing the conversation.')
     parser.add_argument('-t', '--timestamp', action='store_true', help='Include timestamps in the output.')
     parser.add_argument('-o', '--output_format', choices=['text', 'markdown', 'html'], default='text', help='Output format.')
@@ -120,10 +137,9 @@ def main():
             data = json.load(f)
 
         # Flexible JSON Structure Handling
-        if 'messages' in data:
-            messages = data['messages']
-        else:
-            print("Error: 'messages' key not found in JSON.")
+        messages = data.get('messages')
+        if not messages:
+            logging.error("Error: 'messages' key not found in JSON.")
             return
 
         formatted_dialogue = format_dialogue(messages, output_format, include_timestamps)
@@ -137,14 +153,14 @@ def main():
 
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(formatted_dialogue)
-        print(f"Formatted conversation saved to {output_file}")
+        logging.info(f"Formatted conversation saved to {output_file}")
 
     except FileNotFoundError:
-        print("Error: Input file not found.")
+        logging.error("Error: Input file not found.")
     except json.JSONDecodeError:
-        print("Error: Invalid JSON format in the input file.")
+        logging.error("Error: Invalid JSON format in the input file.")
     except Exception as e:
-        print(f"An error occurred: {e}")
+        logging.exception(f"An unexpected error occurred: {e}")
 
 if __name__ == '__main__':
     main()
